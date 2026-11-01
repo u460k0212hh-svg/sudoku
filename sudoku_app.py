@@ -259,7 +259,7 @@ with right:
                 st.session_state.recorded = True
                 st.rerun()
 
-    st.subheader("🏆 등수표 (모든 사용자 공유)")
+    st.subheader("🏆 등수표")
     records = get_ranking_board()["records"][:MAX_RANK]
     if records:
         st.dataframe(
