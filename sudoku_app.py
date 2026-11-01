@@ -134,7 +134,7 @@ st.markdown("""
 <style>
 div[data-testid="stTextInput"] input {
     text-align: center; font-size: 1.5rem; font-weight: 600;
-    height: 3rem; padding: 0; color: #d62728;
+    height: 3rem; padding: 0;
 }
 div[data-testid="stTextInput"] input:disabled {
     color: #111 !important; -webkit-text-fill-color: #111;
@@ -183,11 +183,15 @@ def timer_box():
     else:
         elapsed, running = time.time() - st.session_state.start_time, "true"
     components.html('''
-<div id="t" style="font-family:'Source Sans Pro',sans-serif;font-size:2.2rem;color:#31333F;">00:00</div>
+<div id="t" style="font-family:'Source Sans Pro',sans-serif;font-size:2.2rem;">00:00</div>
 <script>
 const base = Date.now() - %d;
 const running = %s;
 function draw() {
+  try {
+    const app = parent.document.querySelector(".stApp") || parent.document.body;
+    document.getElementById("t").style.color = getComputedStyle(app).color;
+  } catch (err) {}
   const e = Math.floor((Date.now() - base) / 1000);
   document.getElementById("t").textContent =
     String(Math.floor(e / 60)).padStart(2, "0") + ":" + String(e %% 60).padStart(2, "0");
