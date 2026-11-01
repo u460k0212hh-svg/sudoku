@@ -4,6 +4,7 @@ import time
 from functools import wraps
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 # 기본 정답판
 BASE_GRID = [
@@ -140,6 +141,10 @@ div[data-testid="stTextInput"] input:disabled {
     background-color: #e9eef5; opacity: 1;
 }
 div[data-testid="stTextInput"] { margin-bottom: -0.6rem; }
+.st-key-board [data-testid="stHorizontalBlock"] { flex-wrap: nowrap !important; gap: 0.3rem !important; }
+.st-key-board [data-testid="stColumn"] { min-width: 0 !important; width: auto !important; flex: 1 1 0 !important; }
+.st-key-board [data-testid="stColumn"]:nth-child(3),
+.st-key-board [data-testid="stColumn"]:nth-child(6) { margin-right: 0.7rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -150,15 +155,9 @@ st.title(GAME_TITLE)
 
 left, right = st.columns([3, 2], gap="large")
 
-# 사이드바
-with st.sidebar:
-    st.header("게임 설정")
-    st.slider("힌트 비율 (클수록 쉬움)", 0.3, 0.9, 0.5, 0.05, key="hint_ratio")
-    if st.button("🔀 섞기 (새 게임)", use_container_width=True):
-        new_game()
-        st.rerun()
-
-    st.divider()
+# 관리자 메뉴 (이 부분만 따로 다시 그려짐)
+@st.fragment
+def admin_panel():
     st.subheader("🔒 관리자")
     if ADMIN_PASSWORD is None:
         st.caption("secrets.toml 에 ADMIN_PASSWORD 가 없어 관리자 기능이 꺼져 있습니다.")
@@ -169,33 +168,58 @@ with st.sidebar:
                 st.success("관리자 인증 완료")
                 if st.button("등수표 초기화", use_container_width=True):
                     reset_ranking()
-                    st.rerun()
+                    st.rerun(scope="app")
                 if st.checkbox("정답 보기"):
                     st.code("\n".join(" ".join(r) for r in st.session_state.solution))
             else:
                 st.error("비밀번호가 틀렸습니다")
 
 
-# 타이머는 1초마다 갱신
-@st.fragment(run_every=1)
+# 타이머 (브라우저에서 1초마다 갱신)
 def timer_box():
+    st.caption("⏱ 소요시간")
     if st.session_state.finished:
-        st.metric("⏱ 소요시간", fmt_time(st.session_state.final_time))
+        elapsed, running = st.session_state.final_time, "false"
     else:
-        st.metric("⏱ 소요시간", fmt_time(time.time() - st.session_state.start_time))
+        elapsed, running = time.time() - st.session_state.start_time, "true"
+    components.html('''
+<div id="t" style="font-family:'Source Sans Pro',sans-serif;font-size:2.2rem;color:#31333F;">00:00</div>
+<script>
+const base = Date.now() - %d;
+const running = %s;
+function draw() {
+  const e = Math.floor((Date.now() - base) / 1000);
+  document.getElementById("t").textContent =
+    String(Math.floor(e / 60)).padStart(2, "0") + ":" + String(e %% 60).padStart(2, "0");
+}
+draw();
+if (running) setInterval(draw, 1000);
+</script>''' % (int(elapsed * 1000), running), height=55)
+
+
+# 사이드바
+with st.sidebar:
+    st.header("게임 설정")
+    st.slider("힌트 비율 (클수록 쉬움)", 0.3, 0.9, 0.5, 0.05, key="hint_ratio")
+    if st.button("🔀 섞기 (새 게임)", use_container_width=True):
+        new_game()
+        st.rerun()
+
+    st.divider()
+    admin_panel()
+
 
 
 # 스도쿠 판
-with left:
+with left, st.container(key="board"):
     gid = st.session_state.game_id
     puzzle = st.session_state.puzzle
     for i in range(9):
         if i in (3, 6):
             st.write("")
-        cols = st.columns([1, 1, 1, 0.25, 1, 1, 1, 0.25, 1, 1, 1])
-        col_idx = [0, 1, 2, 4, 5, 6, 8, 9, 10]
+        cols = st.columns(9)
         for j in range(9):
-            with cols[col_idx[j]]:
+            with cols[j]:
                 if puzzle[i][j]:
                     st.text_input("r%dc%d" % (i, j), value=puzzle[i][j], disabled=True,
                                   key="hint_%d_%d_%d" % (gid, i, j), label_visibility="collapsed")
