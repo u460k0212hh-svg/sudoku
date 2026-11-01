@@ -47,7 +47,7 @@ def count_calls(counter_name):
     return decorator
 
 
-# 문제 생성 (같은 seed면 캐시 사용)
+# 문제 생성
 @st.cache_data
 def make_puzzle(seed, hint_ratio):
     rng = random.Random(seed)
@@ -106,7 +106,7 @@ def check_board(board):
     return "ok", "!!! ~~~Congratulation~~~ !!!"
 
 
-# 새 게임 시작 (session_state에 상태 저장)
+# 새 게임 시작
 def new_game():
     hint_ratio = st.session_state.get("hint_ratio", 0.5)
     st.session_state.seed = random.randint(0, 10**9)
@@ -155,7 +155,7 @@ st.title(GAME_TITLE)
 
 left, right = st.columns([3, 2], gap="large")
 
-# 관리자 메뉴 (이 부분만 따로 다시 그려짐)
+# 관리자 메뉴 
 @st.fragment
 def admin_panel():
     st.subheader("🔒 관리자")
@@ -175,7 +175,7 @@ def admin_panel():
                 st.error("비밀번호가 틀렸습니다")
 
 
-# 타이머 (브라우저에서 1초마다 갱신)
+# 타이머 
 def timer_box():
     st.caption("⏱ 소요시간")
     if st.session_state.finished:
